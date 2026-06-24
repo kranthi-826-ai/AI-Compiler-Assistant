@@ -10,10 +10,14 @@ const WorkflowDrawer = ({
   const [expandedSections, setExpandedSections] = useState({
     lexical: true,
     parsing: false,
+    semantic: false,
+    symbolTable: false,
+    intermediateCode: false,
+    optimization: false,
+    codeGeneration: false,
     errorDetection: false,
     aiSuggestion: false
   })
-
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -121,6 +125,91 @@ const WorkflowDrawer = ({
                   </div>
                 )}
               </div>
+<div className="border border-slate-700 rounded-lg">
+  <button
+    onClick={() => toggleSection('semantic')}
+    className="w-full p-4 text-left flex justify-between"
+  >
+    <span>▶ Semantic Analysis</span>
+    <span>{expandedSections.semantic ? '▼' : '▶'}</span>
+  </button>
+
+  {expandedSections.semantic && (
+    <div className="p-4 border-t border-slate-700">
+      <pre>
+        {analysisData.semantic?.result}
+      </pre>
+    </div>
+  )}
+</div>
+<div className="border border-slate-700 rounded-lg">
+  <button
+    onClick={() => toggleSection('symbolTable')}
+    className="w-full p-4 text-left flex justify-between"
+  >
+    <span>▶ Symbol Table</span>
+    <span>{expandedSections.symbolTable ? '▼' : '▶'}</span>
+  </button>
+
+  {expandedSections.symbolTable && (
+    <div className="p-4 border-t border-slate-700">
+      <pre>
+        {analysisData.symbolTable?.join('\n')}
+      </pre>
+    </div>
+  )}
+</div>
+<div className="border border-slate-700 rounded-lg">
+  <button
+    onClick={() => toggleSection('intermediateCode')}
+    className="w-full p-4 text-left flex justify-between"
+  >
+    <span>▶ Intermediate Code</span>
+    <span>{expandedSections.intermediateCode ? '▼' : '▶'}</span>
+  </button>
+
+  {expandedSections.intermediateCode && (
+    <div className="p-4 border-t border-slate-700">
+      <pre>
+        {analysisData.intermediateCode?.join('\n')}
+      </pre>
+    </div>
+  )}
+</div>
+<div className="border border-slate-700 rounded-lg">
+  <button
+    onClick={() => toggleSection('optimization')}
+    className="w-full p-4 text-left flex justify-between"
+  >
+    <span>▶ Optimization</span>
+    <span>{expandedSections.optimization ? '▼' : '▶'}</span>
+  </button>
+
+  {expandedSections.optimization && (
+    <div className="p-4 border-t border-slate-700">
+      <pre>
+        {analysisData.optimization?.join('\n')}
+      </pre>
+    </div>
+  )}
+</div>
+<div className="border border-slate-700 rounded-lg">
+  <button
+    onClick={() => toggleSection('codeGeneration')}
+    className="w-full p-4 text-left flex justify-between"
+  >
+    <span>▶ Code Generation</span>
+    <span>{expandedSections.codeGeneration ? '▼' : '▶'}</span>
+  </button>
+
+  {expandedSections.codeGeneration && (
+    <div className="p-4 border-t border-slate-700">
+      <pre>
+        {analysisData.codeGeneration?.join('\n')}
+      </pre>
+    </div>
+  )}
+</div>
 
               {/* Error Detection */}
               <div className="border border-slate-700 rounded-lg">

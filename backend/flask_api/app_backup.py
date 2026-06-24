@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 import subprocess
 import os
 from flask_cors import CORS
-from ai_fixer import fix_code
 
 app = Flask(__name__)
 CORS(app)
@@ -19,8 +18,11 @@ def analyze():
     data = request.get_json()
 
     code = data.get("code", "")
-    user_input = data.get("input", "")
     language = data.get("language", "c")
+
+    # =========================
+    # LEXER SECTION
+    # =========================
 
     lexer_dir = os.path.expanduser(
         "~/AI_Compiler_Assistant/lexer"
@@ -49,7 +51,6 @@ def analyze():
         lexer_output.split("\n"),
         start=1
     ):
-
         if ":" in line:
 
             parts = line.split(":")
@@ -63,6 +64,10 @@ def analyze():
                 "type": token_type,
                 "value": token_value
             })
+
+    # =========================
+    # GCC ERROR DETECTION
+    # =========================
 
     gcc_file = os.path.join(
         os.getcwd(),
@@ -97,16 +102,48 @@ def analyze():
                     column_number = parts[2]
 
                     error_message = ":".join(parts[3:])
+
                     error_message = error_message.replace(
                         "error:",
                         ""
                     ).strip()
 
+                    # =========================
+                    # AUTO FIX ACTION DETECTION
+                    # =========================
+
+                    action = "unknown"
+                    target_line = int(line_number)
+
+                    if (
+                        "expected" in error_message
+                        and ";" in error_message
+                    ):
+                        action = "add_semicolon"
+                        target_line = int(line_number) - 1
+
+                    elif (
+                        "expected" in error_message
+                        and ")" in error_message
+                    ):
+                        action = "add_parenthesis"
+
+                    elif (
+                        "expected" in error_message
+                        and "}" in error_message
+                    ):
+                        action = "add_brace"
+
+                    elif "undeclared" in error_message:
+                        action = "declare_variable"
+
                     errors.append({
                         "line": line_number,
                         "column": column_number,
                         "type": "Syntax Error",
-                        "message": error_message
+                        "message": error_message,
+                        "action": action,
+                        "targetLine": target_line
                     })
 
                 except Exception:
@@ -115,128 +152,34 @@ def analyze():
                         "line": "Unknown",
                         "column": "Unknown",
                         "type": "Compiler Error",
-                        "message": line
+                        "message": line,
+                        "action": "unknown",
+                        "targetLine": 0
                     })
 
+    print("\n===== ERRORS =====")
+    print(errors)
+    print("==================\n")
+
     return jsonify({
+
         "success": True,
+
         "lexical": lexical_tokens,
+
         "parsing": {
             "matchedRules": [
-                "Program",
-                "Declaration",
-                "Main Function",
-                "Statements"
-             ]
-          },
+                "Lexical Analysis Complete"
+            ]
+        },
 
-          "semantic": {
-              "result": "Semantic Analysis Completed Successfully"
-           },
+        "errorDetection": errors,
 
-         "symbolTable": [
-             "main : function",
-             "int : datatype"
-           ],
-
-         "intermediateCode": [
-             "BEGIN_FUNC main",
-             "EXECUTE_STATEMENTS",
-             "END_FUNC"
-          ],
-
-         "optimization": [
-             "Dead Code Elimination",
-             "Constant Folding",
-             "Optimization Complete"
-          ],
-
-         "codeGeneration": [
-             "MOV AX, 0",
-             "CALL main",
-             "RET"
-          ],
-
-         "errorDetection": errors,
-
-         "aiSuggestion": {
-             "correction": "Click Apply Fix to generate AI correction"
-          }
-      })
-
-
-@app.route("/fix", methods=["POST"])
-def fix():
-
-    data = request.get_json()
-
-    code = data.get("code", "")
-
-    try:
-
-        fixed_code = fix_code(code)
-
-        return jsonify({
-            "success": True,
-            "fixedCode": fixed_code
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "success": False,
-            "message": str(e),
-            "fixedCode": code
-        })
-
-@app.route("/run", methods=["POST"])
-def run_code():
-
-    data = request.get_json()
-
-    code = data.get("code", "")
-    user_input = data.get("input", "")
-
-    source_file = "temp_run.c"
-    output_file = "temp_run"
-
-    with open(source_file, "w") as f:
-        f.write(code)
-
-    compile_result = subprocess.run(
-        ["gcc", source_file, "-o", output_file],
-        capture_output=True,
-        text=True
-    )
-
-    if compile_result.returncode != 0:
-
-        return jsonify({
-            "success": False,
-            "output": compile_result.stderr
-        })
-
-    try:
-
-        run_result = subprocess.run(
-            [f"./{output_file}"],
-            input=user_input,
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-
-        return jsonify({
-            "success": True,
-            "output": run_result.stdout
-        })
-
-    except subprocess.TimeoutExpired:
-
-        return jsonify({
-            "success": False,
-            "output": "Program execution timed out"
-        })
+        "aiSuggestion": {
+            "correction":
+                "Check compiler errors and apply fixes"
+        }
+    })
 
 
 if __name__ == "__main__":

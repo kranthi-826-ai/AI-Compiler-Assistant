@@ -5,25 +5,17 @@ import Navbar from './components/Navbar'
 import LanguageSelector from './components/LanguageSelector'
 import CodeEditor from './components/CodeEditor'
 import AnalyzeButton from './components/AnalyzeButton'
-import RunButton from './components/RunButton'
 import ErrorPanel from './components/ErrorPanel'
 import SuggestionPanel from './components/SuggestionPanel'
 import CompilerWorkflow from './components/CompilerWorkflow'
 import WorkflowDrawer from './components/WorkflowDrawer'
-import ProgramIOPanel from './components/ProgramIOPanel'
 
 const App = () => {
 
   const [language, setLanguage] = useState('c')
   const [code, setCode] = useState('')
-
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isFixing, setIsFixing] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
-
-  const [output, setOutput] = useState('')
-  const [programInput, setProgramInput] = useState('')
-  const [needsInput, setNeedsInput] = useState(false)
 
   const [errors, setErrors] = useState([])
   const [suggestions, setSuggestions] = useState([])
@@ -52,6 +44,8 @@ const App = () => {
       )
 
       const data = await response.json()
+
+      console.log(data)
 
       setAnalysisData(data)
 
@@ -111,12 +105,16 @@ const App = () => {
 
       const data = await response.json()
 
+      console.log(data)
+
       if (
         data.success &&
         data.fixedCode
       ) {
 
-        setCode(data.fixedCode)
+        setCode(
+          data.fixedCode
+        )
 
         setErrors([])
 
@@ -133,74 +131,12 @@ const App = () => {
 
     } catch (error) {
 
-      console.error('AI Fix Error:', error)
+      console.error(
+        'AI Fix Error:',
+        error
+      )
 
       setIsFixing(false)
-    }
-  }
-
-  const handleRun = async () => {
-
-    if (
-      (
-        code.includes('scanf(') ||
-        code.includes('gets(') ||
-        code.includes('fgets(')
-      ) &&
-      !programInput.trim()
-    ) {
-
-      setNeedsInput(true)
-
-      setOutput(
-        'Program is waiting for input...'
-      )
-
-      return
-    }
-
-    try {
-
-      setIsRunning(true)
-
-      const response = await fetch(
-        'http://127.0.0.1:5000/run',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-            input: programInput,
-          }),
-        }
-      )
-
-      const data = await response.json()
-
-      if (data.success) {
-
-        setOutput(data.output)
-
-      } else {
-
-        setOutput(
-          data.output || 'Execution Failed'
-        )
-      }
-
-      setIsRunning(false)
-
-    } catch (error) {
-
-      console.error(error)
-
-      setOutput(
-        'Failed to connect to backend'
-      )
-
-      setIsRunning(false)
     }
   }
 
@@ -247,16 +183,11 @@ const App = () => {
 
             </div>
 
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex justify-between items-center">
 
               <AnalyzeButton
                 onClick={handleAnalyze}
                 isLoading={isAnalyzing}
-              />
-
-              <RunButton
-                onClick={handleRun}
-                isRunning={isRunning}
               />
 
               <CompilerWorkflow
@@ -266,13 +197,6 @@ const App = () => {
               />
 
             </div>
-
-            <ProgramIOPanel
-              needsInput={needsInput}
-              programInput={programInput}
-              setProgramInput={setProgramInput}
-              output={output}
-            />
 
           </div>
 
